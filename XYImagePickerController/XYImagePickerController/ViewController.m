@@ -20,41 +20,51 @@
 #import "XYImagePickerController.h"
 
 @interface ViewController ()
-
+@property (weak, nonatomic) IBOutlet UIImageView *imageView;
+@property (weak, nonatomic) IBOutlet UILabel *reasonLabel;
 @end
 
 @implementation ViewController
-{
-    id obj;
-}
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do any additional setup after loading the view.
-}
 
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
-{
+- (IBAction)getImageWithCamera:(id)sender {
+    
     UIViewController *fromVC = self;
-//    UIImagePickerControllerSourceType sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     UIImagePickerControllerSourceType sourceType = UIImagePickerControllerSourceTypeCamera;
-//    UIImagePickerControllerSourceType sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
     
     [XYImagePickerController presentImagePickerFromVC:fromVC sourceType:sourceType result:^(UIImage * _Nonnull image, NSString * _Nonnull errorMsg) {
         
-        if (errorMsg) {
+        if (errorMsg) { // 处理错误信息
             NSLog(@"%@",errorMsg);
+            self.reasonLabel.text = [@"操作失败:" stringByAppendingString:errorMsg];
             return;
         }
         
-        // 图片放到第一个image
-        UIImageView *icon = [UIImageView new];
-        icon.image = image;
-        [self.view addSubview:icon];
-        icon.frame = CGRectMake(100, 100, 100, 100);
-        
+        // 使用图片
+        self.imageView.image = image;
+        self.reasonLabel.text = @"操作成功";
     }];
 }
+
+- (IBAction)getImageWithAlbum:(id)sender {
+    
+    UIViewController *fromVC = self;
+    UIImagePickerControllerSourceType sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+        
+    [XYImagePickerController presentImagePickerFromVC:fromVC sourceType:sourceType result:^(UIImage * _Nonnull image, NSString * _Nonnull errorMsg) {
+        
+        if (errorMsg) { // 处理错误信息
+            NSLog(@"%@",errorMsg);
+            self.reasonLabel.text = [@"操作失败:" stringByAppendingString:errorMsg];
+            return;
+        }
+        
+        // 使用图片
+        self.imageView.image = image;
+        self.reasonLabel.text = @"操作成功";
+    }];
+}
+
 
 
 @end

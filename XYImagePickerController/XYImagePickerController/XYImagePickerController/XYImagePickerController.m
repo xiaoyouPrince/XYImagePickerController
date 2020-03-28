@@ -9,9 +9,16 @@
 #import "XYImagePickerController.h"
 #import <AVFoundation/AVFoundation.h>
 
+static NSString *NoCameraAccessAlertTitle = @"Unable to access the Camera";
+static NSString *NoCameraAccessAlertMessage = @"To turn on camera access, choose Settings > Privacy > Camera and turn on Camera access for this app.";
+
 @interface XYImagePickerController ()<UINavigationControllerDelegate,UIImagePickerControllerDelegate>
 /** callBackHandler */
 @property (nonatomic, copy)         void(^callBackHandler)(UIImage *image, NSString *errorMsg);
+/** presetntionController */
+@property (nonatomic, strong)       UIViewController * presetntionController;
+/** imagePicker */
+@property (nonatomic, strong)       UIImagePickerController * imagePicker;
 @end
 @implementation XYImagePickerController
 /// 内部保持自己不被销毁,需要手动销毁置空
@@ -25,27 +32,90 @@ static XYImagePickerController *_instance;
     }
     instance = [XYImagePickerController new];
     instance.callBackHandler = result;
+    instance.presetntionController = controller;
     _instance = instance;
     
-    // 推出imagePicker
     UIImagePickerController *imagePicker = [UIImagePickerController new];
     imagePicker.delegate = instance;
-    imagePicker.sourceType = sourceType;
-    [controller presentViewController:imagePicker animated:YES completion:nil];
+    instance.imagePicker = imagePicker;
+    
+    [instance presentImagePickerForSourceType:sourceType];
 }
 
-- (instancetype)init
-{
-    self = [super init];
-    if (self) {
-        // 权限处理
-        
-        
+#pragma mark - private
+- (void)presentImagePickerForSourceType:(UIImagePickerControllerSourceType)sourceType{
+    if (sourceType == UIImagePickerControllerSourceTypeCamera) {
+        [self showImagePickerForCamera];
+    }else
+    {
+        [self showImagePickerForPhotoPicker];
     }
-    return self;
 }
 
 
+- (void)showImagePickerForCamera{
+    
+    // 检测相机设备是否可用
+    BOOL cameraAvailable = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
+    if (!cameraAvailable) {
+        if (self.callBackHandler) {
+            self.callBackHandler(nil, @"相机设备不可用");
+        }
+        return;
+    }
+    
+    AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    
+    if (authStatus == AVAuthorizationStatusDenied) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:NoCameraAccessAlertTitle message:NoCameraAccessAlertMessage preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+            // 取消
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Settings" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            // 去设置
+            NSURL *settingURL = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+            if ([[UIApplication sharedApplication] canOpenURL:settingURL]) {
+                [[UIApplication sharedApplication] openURL:settingURL options:@{} completionHandler:^(BOOL success) {
+                    // 成功进入设置
+                }];
+            }
+        }]];
+        [self.presetntionController presentViewController:alert animated:YES completion:nil];
+        
+        if (self.callBackHandler) {
+            self.callBackHandler(nil, @"用户拒绝相机访问权限");
+        }
+    }
+    else if (authStatus == AVAuthorizationStatusNotDetermined)
+    {
+        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+            if(granted){
+                dispatch_async(dispatch_get_main_queue(), ^{
+                   // 重新推出
+                    [self showImagePickerForSourceType:UIImagePickerControllerSourceTypeCamera];
+                });
+            }else{
+                if (self.callBackHandler) {
+                    self.callBackHandler(nil, @"用户拒绝相机访问权限");
+                }
+            }
+        }];
+    }else
+    {
+        // 直接推出
+        [self showImagePickerForSourceType:UIImagePickerControllerSourceTypeCamera];
+    }
+}
+
+- (void)showImagePickerForPhotoPicker{
+    [self showImagePickerForSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
+}
+
+- (void)showImagePickerForSourceType:(UIImagePickerControllerSourceType)sourceType{
+    self.imagePicker.sourceType = sourceType;
+    self.imagePicker.modalPresentationStyle = UIModalPresentationFullScreen;
+    [self.presetntionController presentViewController:self.imagePicker animated:YES completion:nil];
+}
 
 
 #pragma mark - ImagePickerDeledate

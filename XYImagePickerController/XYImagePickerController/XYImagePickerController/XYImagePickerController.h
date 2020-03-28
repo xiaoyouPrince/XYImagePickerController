@@ -18,8 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param sourceType 图片来源
 /// @param result 操作结果
 + (void)presentImagePickerFromVC:(nullable UIViewController *)controller
-                                  sourceType:(UIImagePickerControllerSourceType)sourceType
-                                      result:(void(^)(UIImage *image, NSString *errorMsg))result;
+                      sourceType:(UIImagePickerControllerSourceType)sourceType
+                          result:(void(^)(UIImage *image, NSString *errorMsg))result;
 
 @end
 

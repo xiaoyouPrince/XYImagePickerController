@@ -83,7 +83,7 @@ static XYImagePickerController *_instance;
         [self.presetntionController presentViewController:alert animated:YES completion:nil];
         
         if (self.callBackHandler) {
-            self.callBackHandler(nil, @"用户拒绝相机访问权限");
+            self.callBackHandler(nil, @"无相机访问权限");
         }
     }
     else if (authStatus == AVAuthorizationStatusNotDetermined)
@@ -95,9 +95,12 @@ static XYImagePickerController *_instance;
                     [self showImagePickerForSourceType:UIImagePickerControllerSourceTypeCamera];
                 });
             }else{
-                if (self.callBackHandler) {
-                    self.callBackHandler(nil, @"用户拒绝相机访问权限");
-                }
+                dispatch_async(dispatch_get_main_queue(), ^{
+                   // 重新推出
+                    if (self.callBackHandler) {
+                        self.callBackHandler(nil, @"用户拒绝相机访问权限");
+                    }
+                });
             }
         }];
     }else
